@@ -40,4 +40,15 @@ bin/rails server
 
 ## CI
 
-Pipeline em `.github/workflows/ci.yml`: `bundle exec rubocop` + `bundle exec rspec` em todo push/PR. O gate de segurança Brakeman (`bundle exec brakeman`) é adicionado como check obrigatório a partir da Epic 6 — configurar como required status check na branch padrão no GitHub (ação de admin do repositório, fora do escopo deste código).
+Pipeline em `.github/workflows/ci.yml`, com 4 jobs independentes em todo push/PR:
+
+| Job | O que faz |
+|---|---|
+| `scan_ruby` | `bin/brakeman -i config/brakeman.ignore --confidence-level=2` — gate de segurança, bloqueia merge em findings não ignorados |
+| `scan_js` | `bin/importmap audit` — vulnerabilidades em dependências JS |
+| `lint` | `bundle exec rubocop` |
+| `test` | `bundle exec rspec` (Postgres + Redis como services) |
+
+Findings do Brakeman aceitos como risco conhecido (com justificativa) ficam em `config/brakeman.ignore` — nunca suprimir um finding sem uma nota explicando o motivo. Verificado localmente (introduzindo e removendo uma vulnerabilidade de SQL injection de propósito) que o job `scan_ruby` falha (`exit 3`) com uma vulnerabilidade real e passa (`exit 0`) sem ela.
+
+**Ação pendente para `@devops`:** configurar os 4 jobs acima (`scan_ruby`, `scan_js`, `lint`, `test`) como required status checks na branch `main` no GitHub (Settings → Branches → Branch protection rules) — exige acesso de admin do repositório e `gh auth`/acesso à UI do GitHub, fora do escopo de execução deste agente.

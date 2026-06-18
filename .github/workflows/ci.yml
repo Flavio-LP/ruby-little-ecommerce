@@ -6,10 +6,21 @@ on:
     branches: [ main ]
 
 jobs:
-  # Brakeman gate intentionally NOT included yet — added as a hardened, triaged
-  # gate (with config/brakeman.ignore for accepted findings) in Epic 6 Story 6.1,
-  # per docs/prd/epic-6-ci-cd-security-gate.md. Adding it untriaged here would
-  # make this story's "verified green" AC dependent on Epic 6 work.
+  scan_ruby:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Scan for common Rails security vulnerabilities using static analysis
+        run: bin/brakeman -i config/brakeman.ignore --confidence-level=2 --no-pager
 
   scan_js:
     runs-on: ubuntu-latest
