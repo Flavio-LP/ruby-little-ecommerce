@@ -1,0 +1,74 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      # Must match config/database.yml's production block: username is
+      # hardcoded to "web_e_commerce" there, so the Postgres bootstrap user
+      # (which becomes a superuser, able to create the cache/queue/cable
+      # databases via db:prepare) has to be named the same.
+      POSTGRES_USER: web_e_commerce
+      POSTGRES_PASSWORD: ${WEB_E_COMMERCE_DATABASE_PASSWORD}
+      POSTGRES_DB: web_e_commerce_production
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U web_e_commerce"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    volumes:
+      - redis_data_prod:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${WEB_PORT:-80}:80"
+    environment:
+      RAILS_ENV: production
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      WEB_E_COMMERCE_DATABASE_PASSWORD: ${WEB_E_COMMERCE_DATABASE_PASSWORD}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bundle exec sidekiq
+    environment:
+      RAILS_ENV: production
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      WEB_E_COMMERCE_DATABASE_PASSWORD: ${WEB_E_COMMERCE_DATABASE_PASSWORD}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data_prod:
+  redis_data_prod:

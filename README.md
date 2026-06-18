@@ -111,20 +111,33 @@ bundle exec rspec
 bin/rails server
 ```
 
-## Build de produção
+## Deploy manual de produção (Docker Compose)
 
-O `Dockerfile` (raiz) gera uma imagem standalone de produção, pensada para build/run manual ou deploy via Kamal — não usa Docker Compose.
+`docker-compose.prod.yml` sobe o mesmo conjunto de serviços do dev (`web`, `worker`, `db`, `redis`), mas usando a imagem de produção (`Dockerfile`, não `Dockerfile.dev`) e credenciais reais — nada hardcoded como no compose de desenvolvimento.
+
+Crie um arquivo `.env.production` na raiz do servidor (não versionado — `.gitignore` já ignora todo `.env*`) com:
 
 ```bash
-make prod-build   # docker build -t web_e_commerce .
-make prod-run     # docker run -d -p 80:80 -e RAILS_MASTER_KEY=... web_e_commerce
-make prod-logs    # docker logs -f web_e_commerce
-make prod-stop    # docker stop + rm
+WEB_E_COMMERCE_DATABASE_PASSWORD=<senha forte para o usuário do Postgres>
+RAILS_MASTER_KEY=<conteúdo de config/master.key>
+WEB_PORT=80   # opcional, padrão 80
 ```
 
-`prod-run` lê a master key de `config/master.key` automaticamente; para sobrescrever, use `RAILS_MASTER_KEY=<valor> make prod-run`.
+`WEB_E_COMMERCE_DATABASE_PASSWORD` é a senha do usuário `web_e_commerce` — nome fixo definido em `config/database.yml` para o ambiente de produção (junto com os bancos `web_e_commerce_production`, `_cache`, `_queue` e `_cable`, criados automaticamente no primeiro boot pelo `bin/docker-entrypoint`).
 
-Deploy real (múltiplos servidores, SSL, registry) é feito via Kamal (`config/deploy.yml`), mas o arquivo ainda está com placeholders (`192.168.0.1`, `your-user`) e precisa ser configurado antes de um `kamal deploy` funcionar.
+```bash
+make prod-build     # build das imagens (web, worker) a partir do Dockerfile
+make prod-up         # sobe o stack em produção (web, worker, db, redis)
+make prod-ps          # status dos containers
+make prod-logs         # logs (make prod-logs s=web para um serviço específico)
+make prod-migrate       # roda migrations pendentes
+make prod-console        # bin/rails console no container web de produção
+make prod-down             # para o stack
+```
+
+Os dados do Postgres e do Redis persistem nos volumes nomeados `postgres_data_prod` e `redis_data_prod` entre restarts.
+
+Alternativa: deploy via Kamal (múltiplos servidores, SSL automático, registry) usando `config/deploy.yml`, mas o arquivo ainda está com placeholders (`192.168.0.1`, `your-user`) e precisa ser configurado antes de um `kamal deploy` funcionar.
 
 ## Testes
 
@@ -175,9 +188,10 @@ docs/
 ├── framework/           # tech stack, coding standards
 └── stories/             # stories de desenvolvimento (1.1, 2.3, etc.)
 
-spec/                     # ver seção Testes acima
-config/deploy.yml         # configuração Kamal (produção)
-docker-compose.yml         # ambiente de desenvolvimento
+spec/                       # ver seção Testes acima
+config/deploy.yml           # configuração Kamal (produção, alternativa)
+docker-compose.yml          # ambiente de desenvolvimento
+docker-compose.prod.yml     # deploy manual de produção (requer .env.production)
 Dockerfile / Dockerfile.dev # imagens de produção / desenvolvimento
-Makefile                   # atalhos para docker compose e build/run de produção
+Makefile                    # atalhos para docker compose (dev e produção)
 ```
