@@ -1,0 +1,33 @@
+<%= form_with model: [product], url: url, local: true do |f| %>
+  <% if product.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% product.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= f.label :name, class: "form-label" %>
+    <%= f.text_field :name, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :description, class: "form-label" %>
+    <%= f.text_area :description, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :price_cents, "Price (cents)", class: "form-label" %>
+    <%= f.number_field :price_cents, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :sku, class: "form-label" %>
+    <%= f.text_field :sku, class: "form-control" %>
+  </div>
+
+  <%= f.submit class: "btn btn-primary" %>
+<% end %>

@@ -1,0 +1,21 @@
+<h1 class="mb-4"><%= ActsAsTenant.current_tenant.name %></h1>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h5 card-title">Products</h2>
+        <%= link_to "Manage products", admin_products_path(shop_slug: params[:shop_slug]), class: "btn btn-sm btn-outline-primary" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h2 class="h5 card-title">Orders</h2>
+        <p class="card-text text-muted">Order visibility is coming in Epic 5.</p>
+      </div>
+    </div>
+  </div>
+</div>

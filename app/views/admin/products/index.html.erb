@@ -1,0 +1,29 @@
+<h1 class="mb-4">Products</h1>
+
+<%= link_to "New product", new_admin_product_path(shop_slug: params[:shop_slug]), class: "btn btn-primary mb-3" %>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Price</th>
+      <th>Active</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @products.each do |product| %>
+      <tr>
+        <td><%= product.name %></td>
+        <td><%= number_to_currency(product.price_cents / 100.0) %></td>
+        <td><%= product.active? ? "Yes" : "No" %></td>
+        <td>
+          <%= link_to "Edit", edit_admin_product_path(shop_slug: params[:shop_slug], id: product.id) %>
+          <% if product.active? %>
+            <%= button_to "Deactivate", deactivate_admin_product_path(shop_slug: params[:shop_slug], id: product.id), method: :patch, class: "btn btn-link p-0" %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

@@ -1,0 +1,3 @@
+<h1 class="mb-4">Edit product</h1>
+
+<%= render "form", product: @product, url: admin_product_path(shop_slug: params[:shop_slug], id: @product.id) %>
