@@ -1,0 +1,24 @@
+<h1 class="mb-4">Orders</h1>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Status</th>
+      <th>Total</th>
+      <th>Placed at</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @orders.each do |order| %>
+      <tr>
+        <td><%= order.id %></td>
+        <td><%= order.status %></td>
+        <td><%= number_to_currency(order.total_cents / 100.0) %></td>
+        <td><%= order.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+        <td><%= link_to "View", admin_order_path(shop_slug: params[:shop_slug], id: order.id) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

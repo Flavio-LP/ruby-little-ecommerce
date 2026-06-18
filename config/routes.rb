@@ -29,5 +29,13 @@ Rails.application.routes.draw do
     resource :cart, controller: "public/carts", only: %i[show] do
       resources :cart_items, controller: "public/cart_items", only: %i[update destroy]
     end
+
+    resource :checkout, controller: "public/checkout", only: %i[create] do
+      get :confirmation, on: :collection
+    end
+
+    namespace :admin do
+      resources :orders, only: %i[index show]
+    end
   end
 end

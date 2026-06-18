@@ -28,4 +28,5 @@
     </tbody>
   </table>
   <p class="fw-bold">Total: <%= number_to_currency(cart.total_cents / 100.0) %></p>
+  <%= button_to "Checkout", checkout_path(shop_slug: params[:shop_slug]), class: "btn btn-success" %>
 <% end %>
