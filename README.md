@@ -1,33 +1,83 @@
 # Web E-Commerce (Multi-Tenant)
 
-Plataforma de e-commerce multi-tenant (estilo Shopify): cada vendedor tem sua própria loja (`/:shop_slug/...`), com catálogo, carrinho e checkout isolados por tenant. Veja `docs/prd.md` e `docs/architecture.md` para o desenho completo.
+Plataforma de e-commerce multi-tenant (estilo Shopify): cada vendedor tem sua própria loja (`/:shop_slug/...`), com catálogo, carrinho e checkout isolados por tenant.
 
-## Ambiente de desenvolvimento (Docker Compose)
+Documentação completa:
+- [`docs/prd.md`](docs/prd.md) — requisitos e épicos do produto
+- [`docs/architecture.md`](docs/architecture.md) — arquitetura técnica detalhada
+- [`docs/framework/tech-stack.md`](docs/framework/tech-stack.md) — stack
+- [`docs/stories/`](docs/stories/) — stories de desenvolvimento por épico
+
+## Stack
+
+- **Ruby** 3.2.8 / **Rails** 8.0.5
+- **PostgreSQL 16** — banco de dados principal
+- **Redis 7** — cache, jobs (Sidekiq)
+- **Sidekiq** — processamento de jobs em background
+- **Devise** — autenticação de usuários (vendedores)
+- **CanCanCan** — autorização baseada em abilities
+- **acts_as_tenant** — escopo de tenant (multi-loja) por `shop`
+- **Interactor** — objetos de caso de uso (`app/interactors/`)
+- **Turbo + Stimulus + Importmap** — frontend sem build JS (Hotwire)
+- **Propshaft** — asset pipeline
+- **RSpec + Capybara + Cuprite + FactoryBot** — testes
+- **Brakeman + bin/importmap audit + Rubocop (omakase)** — segurança e lint
+- **Kamal** — deploy de produção (não configurado com servidor real ainda)
+
+## Funcionalidades
+
+- Cadastro de vendedor cria automaticamente uma loja (`Shop`) com slug único
+- Catálogo de produtos por loja, com CRUD para o vendedor (`/:shop_slug/admin/products`)
+- Vitrine pública por loja (`/:shop_slug/produtos`)
+- Carrinho de compras via Turbo Streams (sem reload de página)
+- Checkout que gera `Order` + `LineItem`s, com confirmação
+- Painel administrativo do vendedor: dashboard, pedidos, produtos — visível apenas para o dono da loja (isolamento de tenant garantido por `acts_as_tenant` + `CanCanCan`)
+- Health check em `/up` (verifica app, banco e Redis)
+
+## Como rodar — Docker Compose (recomendado)
 
 Pré-requisitos: Docker Engine + Docker Compose v2.
 
-```bash
-# build + start (web, db, redis, worker)
-docker compose up
+Um `Makefile` na raiz encapsula os comandos mais usados (`make help` lista todos):
 
-# em outro terminal, depois do primeiro boot:
-docker compose exec web bundle exec rspec       # suíte de testes
-docker compose exec web bin/rails console        # console Rails
-docker compose exec web bin/rails db:migrate      # migrations
-docker compose exec web bash                      # shell no container
+```bash
+make build      # build das imagens (web, worker)
+make up         # sobe o stack em foreground (web, db, redis, worker)
+make up-d       # mesma coisa, mas detached
+make ps         # status dos containers
+make logs       # logs (make logs s=web para um serviço específico)
+make console    # bin/rails console dentro do container web
+make migrate    # bin/rails db:migrate
+make test       # bundle exec rspec
+make shell      # shell (bash) no container web
+make down       # para o stack
+make clean      # para o stack e remove volumes (postgres_data, bundle_cache)
+```
+
+Sem o Makefile, os comandos equivalentes via `docker compose`:
+
+```bash
+docker compose up                                  # build + start
+docker compose exec web bundle exec rspec           # suíte de testes
+docker compose exec web bin/rails console            # console Rails
+docker compose exec web bin/rails db:migrate          # migrations
+docker compose exec web bash                          # shell no container
 ```
 
 O serviço `web` cria/migra o banco automaticamente no boot (`bin/dev-server`). Dados do Postgres persistem no volume nomeado `postgres_data` entre restarts.
 
-Serviços:
-- `web` — Rails (Puma), porta `3000`
-- `db` — PostgreSQL 16, porta `5432`
-- `redis` — Redis 7, porta `6379`
-- `worker` — Sidekiq (background jobs)
+Serviços (`docker-compose.yml`):
 
-Acesse `http://localhost:3000/up` para o health-check.
+| Serviço | Imagem/build | Porta | Papel |
+|---|---|---|---|
+| `web` | `Dockerfile.dev` | `3000` | Rails (Puma) |
+| `db` | `postgres:16` | `5432` | Banco de dados |
+| `redis` | `redis:7` | `6379` | Cache + fila do Sidekiq |
+| `worker` | `Dockerfile.dev` | — | Sidekiq (jobs em background) |
 
-## Sem Docker (Ruby local)
+Acesse `http://localhost:3000` para a vitrine e `http://localhost:3000/up` para o health-check.
+
+## Como rodar — sem Docker (Ruby local)
 
 Requer Ruby 3.2.8 e PostgreSQL/Redis rodando localmente, com `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, `REDIS_URL` configurados via ambiente conforme `config/database.yml`.
 
@@ -38,17 +88,73 @@ bundle exec rspec
 bin/rails server
 ```
 
-## CI
+## Build de produção
 
-Pipeline em `.github/workflows/ci.yml`, com 4 jobs independentes em todo push/PR:
+O `Dockerfile` (raiz) gera uma imagem standalone de produção, pensada para build/run manual ou deploy via Kamal — não usa Docker Compose.
+
+```bash
+make prod-build   # docker build -t web_e_commerce .
+make prod-run     # docker run -d -p 80:80 -e RAILS_MASTER_KEY=... web_e_commerce
+make prod-logs    # docker logs -f web_e_commerce
+make prod-stop    # docker stop + rm
+```
+
+`prod-run` lê a master key de `config/master.key` automaticamente; para sobrescrever, use `RAILS_MASTER_KEY=<valor> make prod-run`.
+
+Deploy real (múltiplos servidores, SSL, registry) é feito via Kamal (`config/deploy.yml`), mas o arquivo ainda está com placeholders (`192.168.0.1`, `your-user`) e precisa ser configurado antes de um `kamal deploy` funcionar.
+
+## Testes
+
+A suíte usa RSpec, organizada por camada:
+
+| Diretório | O que cobre |
+|---|---|
+| `spec/models/` | Validações, associações, regras de negócio nos models (inclui `ability_spec.rb` para CanCanCan) |
+| `spec/interactors/` | Casos de uso isolados (`Carts::AddItem`, `Checkout::CreateOrder`, `Shops::Register`) |
+| `spec/jobs/` | Jobs em background (Sidekiq) |
+| `spec/requests/` | Testes de integração HTTP (controllers, autenticação, isolamento de tenant) |
+| `spec/features/` | Testes end-to-end via Capybara (fluxos completos: cadastro, carrinho, checkout) |
+
+```bash
+bundle exec rspec                       # suíte completa
+bundle exec rspec spec/models           # só unit tests de models
+bundle exec rspec spec/interactors spec/jobs   # unit tests de interactors + jobs
+```
+
+## CI/CD
+
+Pipeline em [`.github/workflows/ci.yml`](.github/workflows/ci.yml), disparada em todo push/PR para `main` e via `workflow_dispatch`, com 4 jobs independentes em paralelo:
 
 | Job | O que faz |
 |---|---|
 | `scan_ruby` | `bin/brakeman -i config/brakeman.ignore --confidence-level=2` — gate de segurança, bloqueia merge em findings não ignorados |
 | `scan_js` | `bin/importmap audit` — vulnerabilidades em dependências JS |
-| `lint` | `bundle exec rubocop` |
-| `test` | `bundle exec rspec` (Postgres + Redis como services) |
+| `lint` | `bundle exec rubocop` (estilo omakase do Rails) |
+| `test` | `bundle exec rspec` — suíte completa (unit + request + feature specs), com Postgres e Redis como services do GitHub Actions |
 
-Findings do Brakeman aceitos como risco conhecido (com justificativa) ficam em `config/brakeman.ignore` — nunca suprimir um finding sem uma nota explicando o motivo. Verificado localmente (introduzindo e removendo uma vulnerabilidade de SQL injection de propósito) que o job `scan_ruby` falha (`exit 3`) com uma vulnerabilidade real e passa (`exit 0`) sem ela.
+Findings do Brakeman aceitos como risco conhecido (com justificativa) ficam em `config/brakeman.ignore` — nunca suprimir um finding sem uma nota explicando o motivo.
 
 **Ação pendente para `@devops`:** configurar os 4 jobs acima (`scan_ruby`, `scan_js`, `lint`, `test`) como required status checks na branch `main` no GitHub (Settings → Branches → Branch protection rules) — exige acesso de admin do repositório e `gh auth`/acesso à UI do GitHub, fora do escopo de execução deste agente.
+
+## Estrutura do projeto
+
+```
+app/
+├── controllers/         # admin/ (vendedor), public/ (vitrine), users/ (Devise)
+├── interactors/         # carts/, checkout/, shops/ — casos de uso isolados
+├── jobs/                # Sidekiq jobs
+├── models/              # Shop, Product, Cart, CartItem, Order, LineItem, User
+└── views/                # ERB, organizadas por controller
+
+docs/
+├── prd/                 # requisitos e épicos
+├── architecture/        # arquitetura detalhada (schema, segurança, workflows)
+├── framework/           # tech stack, coding standards
+└── stories/             # stories de desenvolvimento (1.1, 2.3, etc.)
+
+spec/                     # ver seção Testes acima
+config/deploy.yml         # configuração Kamal (produção)
+docker-compose.yml         # ambiente de desenvolvimento
+Dockerfile / Dockerfile.dev # imagens de produção / desenvolvimento
+Makefile                   # atalhos para docker compose e build/run de produção
+```
