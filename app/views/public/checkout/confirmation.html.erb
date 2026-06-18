@@ -1,22 +1,27 @@
-<h1 class="mb-4">Thank you for your order!</h1>
+<div class="alert alert-success d-flex align-items-center gap-2">
+  <span class="fs-4">✅</span>
+  <span>Thank you for your order!</span>
+</div>
 
-<p>Order #<%= @order.id %> — <strong><%= number_to_currency(@order.total_cents / 100.0) %></strong></p>
+<p class="text-muted">Order #<%= @order.id %> — <strong class="text-dark"><%= number_to_currency(@order.total_cents / 100.0) %></strong></p>
 
-<table class="table">
-  <thead>
-    <tr>
-      <th>Product</th>
-      <th>Quantity</th>
-      <th>Subtotal</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @order.line_items.each do |item| %>
+<div class="card">
+  <table class="table table-hover align-middle mb-0">
+    <thead>
       <tr>
-        <td><%= item.product.name %></td>
-        <td><%= item.quantity %></td>
-        <td><%= number_to_currency(item.subtotal_cents / 100.0) %></td>
+        <th>Produto</th>
+        <th class="text-center">Quantidade</th>
+        <th class="text-end">Subtotal</th>
       </tr>
-    <% end %>
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      <% @order.line_items.each do |item| %>
+        <tr>
+          <td><%= item.product.name %></td>
+          <td class="text-center"><%= item.quantity %></td>
+          <td class="text-end"><%= number_to_currency(item.subtotal_cents / 100.0) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

@@ -1,3 +1,10 @@
-<h1><%= @product.name %></h1>
-<p><%= @product.description %></p>
-<p class="fw-bold"><%= number_to_currency(@product.price_cents / 100.0) %></p>
+<%= link_to "← Voltar ao catálogo", produtos_path(shop_slug: params[:shop_slug]), class: "link-brand d-inline-block mb-3" %>
+
+<div class="card">
+  <div class="card-body">
+    <h1 class="card-title h3"><%= @product.name %></h1>
+    <p class="card-text text-muted"><%= @product.description %></p>
+    <p class="fs-4 fw-bold text-success mb-3"><%= number_to_currency(@product.price_cents / 100.0) %></p>
+    <%= button_to "Add to cart", add_to_cart_produto_path(shop_slug: params[:shop_slug], id: @product.id), form: { data: { turbo_stream: true } }, class: "btn btn-primary" %>
+  </div>
+</div>

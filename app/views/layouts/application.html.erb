@@ -25,28 +25,48 @@
   </head>
 
   <body>
-    <div class="container py-4">
+    <nav class="navbar navbar-expand bg-white border-bottom shadow-sm mb-4">
+      <div class="container">
+        <%= link_to root_path, class: "navbar-brand" do %>
+          🛍️ Web E-Commerce
+        <% end %>
+
+        <% if params[:shop_slug].present? && ActsAsTenant.current_tenant %>
+          <span class="navbar-text text-muted ms-2 d-none d-sm-inline">
+            &raquo; <%= ActsAsTenant.current_tenant.name %>
+          </span>
+        <% end %>
+
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <% if params[:shop_slug].present? %>
+            <%= turbo_frame_tag "cart_count" do %>
+              <%= render "shared/cart_count" %>
+            <% end %>
+          <% end %>
+
+          <% if current_user %>
+            <span class="text-muted small d-none d-md-inline"><%= current_user.email %></span>
+            <%= button_to "Sair", destroy_user_session_path, method: :delete, class: "btn btn-outline-danger btn-sm" %>
+          <% else %>
+            <%= link_to "Entrar", new_user_session_path, class: "btn btn-outline-primary btn-sm" %>
+            <%= link_to "Cadastrar", new_user_registration_path, class: "btn btn-primary btn-sm" %>
+          <% end %>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container pb-5">
       <% if notice %>
         <p class="alert alert-info"><%= notice %></p>
       <% end %>
       <% if alert %>
         <p class="alert alert-danger"><%= alert %></p>
       <% end %>
-      <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
-        <% if current_user %>
-          <span class="text-muted small"><%= current_user.email %></span>
-          <%= button_to "Sair", destroy_user_session_path, method: :delete, class: "btn btn-outline-danger btn-sm" %>
-        <% else %>
-          <%= link_to "Entrar", new_user_session_path, class: "btn btn-outline-primary btn-sm" %>
-          <%= link_to "Cadastrar", new_user_registration_path, class: "btn btn-primary btn-sm" %>
-        <% end %>
-        <% if params[:shop_slug].present? %>
-          <%= turbo_frame_tag "cart_count" do %>
-            <%= render "shared/cart_count" %>
-          <% end %>
-        <% end %>
-      </div>
       <%= yield %>
-    </div>
+    </main>
+
+    <footer class="app-footer text-center py-4">
+      Web E-Commerce — plataforma multi-tenant
+    </footer>
   </body>
 </html>

@@ -1,29 +1,42 @@
-<h1 class="mb-4">Products</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="mb-0">Produtos</h1>
+  <%= link_to "+ Novo produto", new_admin_product_path(shop_slug: params[:shop_slug]), class: "btn btn-primary" %>
+</div>
 
-<%= link_to "New product", new_admin_product_path(shop_slug: params[:shop_slug]), class: "btn btn-primary mb-3" %>
-
-<table class="table">
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th>Price</th>
-      <th>Active</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @products.each do |product| %>
-      <tr>
-        <td><%= product.name %></td>
-        <td><%= number_to_currency(product.price_cents / 100.0) %></td>
-        <td><%= product.active? ? "Yes" : "No" %></td>
-        <td>
-          <%= link_to "Edit", edit_admin_product_path(shop_slug: params[:shop_slug], id: product.id) %>
-          <% if product.active? %>
-            <%= button_to "Deactivate", deactivate_admin_product_path(shop_slug: params[:shop_slug], id: product.id), method: :patch, class: "btn btn-link p-0" %>
-          <% end %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<% if @products.empty? %>
+  <p class="text-muted">Nenhum produto cadastrado ainda.</p>
+<% else %>
+  <div class="card">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Preço</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @products.each do |product| %>
+          <tr>
+            <td><%= product.name %></td>
+            <td><%= number_to_currency(product.price_cents / 100.0) %></td>
+            <td>
+              <% if product.active? %>
+                <span class="badge text-bg-success">Ativo</span>
+              <% else %>
+                <span class="badge text-bg-secondary">Inativo</span>
+              <% end %>
+            </td>
+            <td class="text-end">
+              <%= link_to "Editar", edit_admin_product_path(shop_slug: params[:shop_slug], id: product.id), class: "link-brand small" %>
+              <% if product.active? %>
+                <%= button_to "Desativar", deactivate_admin_product_path(shop_slug: params[:shop_slug], id: product.id), method: :patch, class: "btn btn-link btn-sm text-danger p-0 ms-2" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

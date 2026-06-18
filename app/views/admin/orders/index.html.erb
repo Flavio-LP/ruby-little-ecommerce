@@ -1,24 +1,30 @@
-<h1 class="mb-4">Orders</h1>
+<h1 class="mb-4">Pedidos</h1>
 
-<table class="table">
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Status</th>
-      <th>Total</th>
-      <th>Placed at</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @orders.each do |order| %>
-      <tr>
-        <td><%= order.id %></td>
-        <td><%= order.status %></td>
-        <td><%= number_to_currency(order.total_cents / 100.0) %></td>
-        <td><%= order.created_at.strftime("%Y-%m-%d %H:%M") %></td>
-        <td><%= link_to "View", admin_order_path(shop_slug: params[:shop_slug], id: order.id) %></td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+<% if @orders.empty? %>
+  <p class="text-muted">Nenhum pedido recebido ainda.</p>
+<% else %>
+  <div class="card">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Status</th>
+          <th>Total</th>
+          <th>Data</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @orders.each do |order| %>
+          <tr>
+            <td>#<%= order.id %></td>
+            <td><span class="badge text-bg-info text-uppercase"><%= order.status %></span></td>
+            <td><%= number_to_currency(order.total_cents / 100.0) %></td>
+            <td class="text-muted"><%= order.created_at.strftime("%d/%m/%Y %H:%M") %></td>
+            <td class="text-end"><%= link_to "Ver detalhes", admin_order_path(shop_slug: params[:shop_slug], id: order.id), class: "link-brand small" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

@@ -1,3 +1,7 @@
-<h1 class="mb-4">New product</h1>
+<%= link_to "← Voltar aos produtos", admin_products_path(shop_slug: params[:shop_slug]), class: "link-brand d-inline-block mb-3" %>
 
-<%= render "form", product: @product, url: admin_products_path(shop_slug: params[:shop_slug]) %>
+<h1 class="mb-4">Novo produto</h1>
+
+<div class="card card-body">
+  <%= render "form", product: @product, url: admin_products_path(shop_slug: params[:shop_slug]) %>
+</div>
