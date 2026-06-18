@@ -1,0 +1,6 @@
+<%= turbo_stream.replace "cart_items" do %>
+  <%= render "public/carts/items", cart: @cart %>
+<% end %>
+<%= turbo_stream.replace "cart_count" do %>
+  <%= render "shared/cart_count" %>
+<% end %>

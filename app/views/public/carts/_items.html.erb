@@ -1,0 +1,31 @@
+<% if cart.cart_items.empty? %>
+  <p class="text-muted">Your cart is empty.</p>
+<% else %>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Subtotal</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% cart.cart_items.each do |item| %>
+        <tr>
+          <td><%= item.product.name %></td>
+          <td style="width: 100px;">
+            <%= form_with model: item, url: cart_cart_item_path(shop_slug: params[:shop_slug], id: item.id), method: :patch, data: { turbo_stream: true } do |f| %>
+              <%= f.number_field :quantity, value: item.quantity, min: 0, class: "form-control form-control-sm", onchange: "this.form.requestSubmit()" %>
+            <% end %>
+          </td>
+          <td><%= number_to_currency(item.subtotal_cents / 100.0) %></td>
+          <td>
+            <%= button_to "Remove", cart_cart_item_path(shop_slug: params[:shop_slug], id: item.id), method: :delete, form: { data: { turbo_stream: true } }, class: "btn btn-link p-0" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <p class="fw-bold">Total: <%= number_to_currency(cart.total_cents / 100.0) %></p>
+<% end %>

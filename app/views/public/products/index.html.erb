@@ -7,6 +7,7 @@
         <div class="card-body">
           <h2 class="h5 card-title"><%= link_to product.name, produto_path(shop_slug: params[:shop_slug], id: product.id) %></h2>
           <p class="card-text"><%= number_to_currency(product.price_cents / 100.0) %></p>
+          <%= button_to "Add to cart", add_to_cart_produto_path(shop_slug: params[:shop_slug], id: product.id), form: { data: { turbo_stream: true } }, class: "btn btn-primary btn-sm" %>
         </div>
       </div>
     </div>

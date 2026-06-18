@@ -10,9 +10,32 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_18_010528) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_18_012258) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "cart_items", force: :cascade do |t|
+    t.bigint "cart_id", null: false
+    t.bigint "product_id", null: false
+    t.integer "quantity", default: 1, null: false
+    t.integer "unit_price_cents", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["cart_id", "product_id"], name: "index_cart_items_on_cart_id_and_product_id", unique: true
+    t.index ["cart_id"], name: "index_cart_items_on_cart_id"
+    t.index ["product_id"], name: "index_cart_items_on_product_id"
+  end
+
+  create_table "carts", force: :cascade do |t|
+    t.bigint "shop_id", null: false
+    t.bigint "user_id"
+    t.string "guest_token"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guest_token"], name: "index_carts_on_guest_token"
+    t.index ["shop_id"], name: "index_carts_on_shop_id"
+    t.index ["user_id"], name: "index_carts_on_user_id"
+  end
 
   create_table "products", force: :cascade do |t|
     t.bigint "shop_id", null: false
@@ -49,6 +72,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_18_010528) do
     t.index ["shop_id"], name: "index_users_on_shop_id"
   end
 
+  add_foreign_key "cart_items", "carts"
+  add_foreign_key "cart_items", "products"
+  add_foreign_key "carts", "shops"
+  add_foreign_key "carts", "users"
   add_foreign_key "products", "shops"
   add_foreign_key "users", "shops"
 end

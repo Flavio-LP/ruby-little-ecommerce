@@ -79,4 +79,13 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
+
+  # Headless Chrome driver via CDP — no separate chromedriver binary needed,
+  # simpler than selenium for JS feature specs inside Docker (Story 4.2).
+  gem "cuprite"
+
+  # Truncation-based cleanup for js: true specs, where the Capybara server
+  # thread has its own DB connection and can't see the test thread's
+  # uncommitted transaction.
+  gem "database_cleaner-active_record"
 end

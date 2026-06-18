@@ -13,8 +13,23 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 # return unless Rails.env.test?
 require 'rspec/rails'
 require 'capybara/rspec'
+require 'capybara/cuprite'
 require 'factory_bot_rails'
 require 'cancan/matchers'
+require 'database_cleaner/active_record'
+
+Capybara.register_driver(:cuprite) do |app|
+  Capybara::Cuprite::Driver.new(
+    app,
+    browser_path: ENV["CUPRITE_CHROME_PATH"],
+    browser_options: { "no-sandbox" => nil, "disable-gpu" => nil },
+    headless: true,
+    process_timeout: 15,
+    timeout: 15
+  )
+end
+Capybara.javascript_driver = :cuprite
+Capybara.default_driver = :rack_test
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
@@ -50,7 +65,20 @@ RSpec.configure do |config|
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
   # instead of true.
+  # Default: Rails' own transactional wrapping (fast). For js: true feature
+  # specs, the example group itself must additionally set
+  # `self.use_transactional_tests = false`, since the Cuprite-driven browser
+  # talks to the app over a real HTTP server thread with its own DB
+  # connection that can't see an open, uncommitted transaction — those specs
+  # use DatabaseCleaner truncation instead (configured below).
   config.use_transactional_fixtures = true
+
+  config.before(:suite) { DatabaseCleaner.clean_with(:truncation) }
+  config.before(:each, js: true) do
+    DatabaseCleaner.strategy = :truncation
+    DatabaseCleaner.start
+  end
+  config.append_after(:each, js: true) { DatabaseCleaner.clean }
 
   config.include FactoryBot::Syntax::Methods
   config.include Devise::Test::IntegrationHelpers, type: :request

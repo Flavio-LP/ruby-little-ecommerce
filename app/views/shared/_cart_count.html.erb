@@ -1,0 +1,1 @@
+<%= link_to "Cart (#{current_cart&.cart_items&.sum(:quantity) || 0})", cart_path(shop_slug: params[:shop_slug]), class: "btn btn-outline-secondary btn-sm" %>

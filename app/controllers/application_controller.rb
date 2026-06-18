@@ -7,6 +7,8 @@ class ApplicationController < ActionController::Base
   set_current_tenant_through_filter
   before_action :set_current_shop, if: -> { params[:shop_slug].present? }
 
+  helper_method :current_cart
+
   rescue_from CanCan::AccessDenied do |exception|
     redirect_back fallback_location: "/", alert: exception.message
   end
@@ -18,5 +20,26 @@ class ApplicationController < ActionController::Base
     set_current_tenant(shop)
   rescue ActiveRecord::RecordNotFound
     raise ActionController::RoutingError, "Shop not found for slug '#{params[:shop_slug]}'"
+  end
+
+  # Resolves (and lazily creates) the cart for the current shop, identifying
+  # the customer either by their signed-in User or by a long-lived signed
+  # cookie token for guest checkout.
+  def current_cart
+    return @current_cart if defined?(@current_cart)
+
+    shop = ActsAsTenant.current_tenant
+    return @current_cart = nil unless shop
+
+    @current_cart =
+      if current_user
+        Cart.find_or_create_by!(shop: shop, user: current_user)
+      else
+        Cart.find_or_create_by!(shop: shop, guest_token: guest_cart_token)
+      end
+  end
+
+  def guest_cart_token
+    cookies.permanent.signed[:guest_cart_token] ||= SecureRandom.uuid
   end
 end

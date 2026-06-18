@@ -32,6 +32,13 @@
       <% if alert %>
         <p class="alert alert-danger"><%= alert %></p>
       <% end %>
+      <% if params[:shop_slug].present? %>
+        <div class="d-flex justify-content-end mb-3">
+          <%= turbo_frame_tag "cart_count" do %>
+            <%= render "shared/cart_count" %>
+          <% end %>
+        </div>
+      <% end %>
       <%= yield %>
     </div>
   </body>

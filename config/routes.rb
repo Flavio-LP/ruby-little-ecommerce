@@ -22,6 +22,12 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :produtos, controller: "public/products", only: %i[index show]
+    resources :produtos, controller: "public/products", only: %i[index show] do
+      post :add_to_cart, on: :member
+    end
+
+    resource :cart, controller: "public/carts", only: %i[show] do
+      resources :cart_items, controller: "public/cart_items", only: %i[update destroy]
+    end
   end
 end
