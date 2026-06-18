@@ -24,6 +24,12 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # Send users back to the login screen after logging out, instead of
+  # Devise's default (root — the shop directory).
+  def after_sign_out_path_for(_resource_or_scope)
+    new_user_session_path
+  end
+
   private
 
   def set_current_shop

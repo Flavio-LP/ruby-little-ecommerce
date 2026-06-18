@@ -20,6 +20,17 @@ RSpec.describe "Sessions", type: :request do
     end
   end
 
+  describe "DELETE /users/sign_out" do
+    it "redirects to the login screen instead of the shop directory" do
+      customer = create(:user, role: :customer)
+      sign_in customer
+
+      delete destroy_user_session_path
+
+      expect(response).to redirect_to(new_user_session_path)
+    end
+  end
+
   describe "GET /" do
     it "lists all shops" do
       shop = create(:shop, name: "Acme")
