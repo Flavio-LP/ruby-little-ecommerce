@@ -10,8 +10,8 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # Defines the root path route ("/") — lists all shops so customers can browse in.
+  root "shops#index"
 
   # Tenant-scoped routes: every seller's shop lives under its own slug.
   scope ":shop_slug" do

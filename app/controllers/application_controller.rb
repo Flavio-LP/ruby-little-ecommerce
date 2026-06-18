@@ -13,6 +13,17 @@ class ApplicationController < ActionController::Base
     redirect_back fallback_location: "/", alert: exception.message
   end
 
+  # Sellers land on their own shop's dashboard after logging in (not just
+  # after registering); everyone else falls back to Devise's default
+  # (stored location, or root — the shop directory).
+  def after_sign_in_path_for(resource)
+    if resource.is_a?(User) && resource.seller? && resource.shop.present?
+      admin_dashboard_path(shop_slug: resource.shop.slug)
+    else
+      super
+    end
+  end
+
   private
 
   def set_current_shop
