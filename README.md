@@ -68,14 +68,37 @@ O serviço `web` cria/migra o banco automaticamente no boot (`bin/dev-server`). 
 
 Serviços (`docker-compose.yml`):
 
-| Serviço | Imagem/build | Porta | Papel |
+| Serviço | Imagem/build | Porta no host (padrão) | Papel |
 |---|---|---|---|
-| `web` | `Dockerfile.dev` | `3000` | Rails (Puma) |
-| `db` | `postgres:16` | `5432` | Banco de dados |
-| `redis` | `redis:7` | `6379` | Cache + fila do Sidekiq |
-| `worker` | `Dockerfile.dev` | — | Sidekiq (jobs em background) |
+| `web` | `Dockerfile.dev` | `3010` → `3000` no container | Rails (Puma) |
+| `db` | `postgres:16` | `5434` → `5432` no container | Banco de dados |
+| `redis` | `redis:7` | `6380` → `6379` no container | Cache + fila do Sidekiq |
+| `worker` | `Dockerfile.dev` | — (sem porta exposta) | Sidekiq (jobs em background) |
 
-Acesse `http://localhost:3000` para a vitrine e `http://localhost:3000/up` para o health-check.
+As portas do host são configuráveis via variáveis de ambiente, caso `3010`/`5434`/`6380` também já estejam em uso: crie um `.env` na raiz com `WEB_PORT`, `DB_PORT` e/ou `REDIS_PORT` (ex.: `WEB_PORT=4000`) antes de rodar `docker compose up` — o Compose lê o `.env` automaticamente.
+
+Acesse `http://localhost:3010` para a vitrine e `http://localhost:3010/up` para o health-check.
+
+## Dados e credenciais de demonstração
+
+A task `lib/tasks/demo_data.rake` popula o banco com 3 lojas, 2 produtos em cada uma, 1 administrador por loja e 2 clientes — útil para testar login e navegação sem precisar cadastrar nada manualmente:
+
+```bash
+make console   # ou: docker compose exec web bin/rails console
+docker compose exec web bin/rails demo:seed
+```
+
+A senha de todas as contas geradas é `password123`. É seguro rodar a task mais de uma vez (idempotente via `find_or_create_by!`).
+
+| Papel | Loja | E-mail | Acesso |
+|---|---|---|---|
+| Administrador | Loja Aurora | `admin-loja-aurora@example.com` | `/loja-aurora/admin` |
+| Administrador | Loja Boreal | `admin-loja-boreal@example.com` | `/loja-boreal/admin` |
+| Administrador | Loja Cedro | `admin-loja-cedro@example.com` | `/loja-cedro/admin` |
+| Cliente | — (compra em qualquer loja) | `cliente1@example.com` | `/` |
+| Cliente | — (compra em qualquer loja) | `cliente2@example.com` | `/` |
+
+Faça login em `http://localhost:3010/users/sign_in` com um desses e-mails e a senha `password123`. Administradores são redirecionados ao painel da própria loja; clientes caem na lista de lojas (`/`) e podem navegar e comprar em qualquer uma delas.
 
 ## Como rodar — sem Docker (Ruby local)
 
